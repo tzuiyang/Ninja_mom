@@ -111,6 +111,14 @@
         const startBtn = document.getElementById('startBtn');
         const body = document.getElementById('body');
 
+        // --- LOAD IMAGES HERE ---
+        // Make sure these files exist in the same folder!
+        const meImg = new Image();
+        meImg.src = 'daniel.jpg'; 
+
+        const momImg = new Image();
+        momImg.src = 'mom.jpg';
+
         // Game State
         let score = 0;
         let gameRunning = false;
@@ -221,21 +229,15 @@
                 ctx.translate(this.x, this.y);
                 ctx.rotate(this.rotation);
                 
-                // Draw Emoji
-                ctx.font = "60px Arial";
-                ctx.textAlign = "center";
-                ctx.textBaseline = "middle";
-                ctx.fillText(this.emoji, 0, 0);
-
-                /* === REAL PHOTO OPTION ===
+                // DRAW IMAGES INSTEAD OF EMOJIS
+                // The numbers (-40, -40, 80, 80) center the image and set size to 80x80px
                 if (this.isBomb) {
-                    // Draw Mom Image
-                    // ctx.drawImage(momImg, -30, -30, 60, 60);
+                    // Draw Mom (Angel/Bomb)
+                    ctx.drawImage(momImg, -40, -40, 80, 80);
                 } else {
-                    // Draw Your Image
-                    // ctx.drawImage(meImg, -30, -30, 60, 60);
+                    // Draw Me (Devil/Target)
+                    ctx.drawImage(meImg, -40, -40, 80, 80);
                 }
-                */
 
                 ctx.restore();
             }
