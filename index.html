@@ -31,7 +31,8 @@
             font-size: 20px;
             font-weight: bold;
         }
-        #start-screen, #game-over-screen {
+        /* Added victory-screen to this list so it shares the same centered layout */
+        #start-screen, #game-over-screen, #victory-screen {
             position: absolute;
             top: 0;
             left: 0;
@@ -49,7 +50,7 @@
             display: none !important;
         }
 
-        /* NEW CSS FOR RULES */
+        /* CSS FOR RULES */
         .rules-container {
             display: flex;
             flex-direction: column;
@@ -162,7 +163,7 @@
 
             <!-- SLASH THESE -->
             <div class="rule-group">
-                <h3 style="color: #2e7d32;">⚔️ 這些可以盡情砍 ⚔️</h3>
+                <h3 style="color: #2e7d32;">⚔️ 這些可以盡情砍, 20分就贏了 ⚔️</h3>
                 <div class="targets-row">
                     <div class="character-preview">
                         <img src="daniel.jpg" class="preview-img target-border">
@@ -183,6 +184,15 @@
         <button id="startBtn">Start Game</button>
     </div>
 
+    <!-- Victory Screen -->
+    <div id="victory-screen" class="hidden">
+        <h1 style="font-size: 50px; color: #ff69b4; margin-bottom: 10px;">🎉 VICTORY! 🎉</h1>
+        <h2 style="font-size: 30px; color: #333;">親愛的娘，祝你生日快樂</h2>
+        <p style="font-size: 20px; color: #555;">Best mom</p>
+        <div style="font-size: 60px; margin: 20px;">🎂🎁🎈</div>
+        <button id="restartBtn">Play Again</button>
+    </div>
+
     <canvas id="gameCanvas"></canvas>
 
     <script>
@@ -190,7 +200,9 @@
         const ctx = canvas.getContext('2d');
         const scoreEl = document.getElementById('score');
         const startScreen = document.getElementById('start-screen');
+        const victoryScreen = document.getElementById('victory-screen');
         const startBtn = document.getElementById('startBtn');
+        const restartBtn = document.getElementById('restartBtn');
         const body = document.getElementById('body');
 
         // --- LOAD IMAGES HERE ---
@@ -211,11 +223,10 @@
         let score = 0;
         let gameRunning = false;
         let lastTime = 0;
-        let spawnTimer = 0;
         
         // Settings
         const GRAVITY = 0.4; // How fast things fall
-        const BLADE_LIFE = 10; // How long the swipe trail lasts
+        const WINNING_SCORE = 20;
         
         // Arrays
         let fruits = []; // The faces
@@ -372,6 +383,16 @@
 
         // --- CORE FUNCTIONS ---
 
+        function winGame() {
+            gameRunning = false;
+            victoryScreen.classList.remove('hidden');
+            // Trigger a final confetti explosion for effect
+            for(let i=0; i<30; i++) {
+                particles.push(new Particle(canvas.width/2, canvas.height/2));
+            }
+            draw(); // Draw one last frame to show the explosion
+        }
+
         function checkCollisions() {
             if (blade.length < 2) return;
 
@@ -409,6 +430,11 @@
                         for(let i=0; i<8; i++) {
                             particles.push(new Particle(fruit.x, fruit.y));
                         }
+                        
+                        // CHECK WIN CONDITION
+                        if (score >= WINNING_SCORE) {
+                            winGame();
+                        }
                     }
                 }
             });
@@ -443,39 +469,20 @@
             return Math.sqrt(dx * dx + dy * dy);
         }
 
-        // --- MAIN LOOP ---
-
-        function animate(timestamp) {
-            if (!gameRunning) return;
-            
+        function draw() {
+             // Clear Screen
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-            // 1. Spawner
-            if (timestamp - lastTime > 1000) { // Approx 1 second
-                // Randomly spawn 1 to 3 fruits
-                const count = Math.floor(Math.random() * 2) + 1;
-                for(let i=0; i<count; i++) fruits.push(new Fruit());
-                lastTime = timestamp;
-            }
-
-            // 2. Update & Draw Fruits
+            // Draw Fruits
             for (let i = fruits.length - 1; i >= 0; i--) {
-                let f = fruits[i];
-                f.update();
-                f.draw(ctx);
-                if (!f.active) fruits.splice(i, 1);
+                fruits[i].draw(ctx);
             }
-
-            // 3. Update & Draw Particles
+            // Draw Particles
             for (let i = particles.length - 1; i >= 0; i--) {
-                let p = particles[i];
-                p.update();
-                p.draw(ctx);
-                if (p.life <= 0) particles.splice(i, 1);
+                particles[i].draw(ctx);
             }
-
-            // 4. Draw Blade
-            if (blade.length > 1) {
+            // Draw Blade
+             if (blade.length > 1) {
                 ctx.beginPath();
                 ctx.strokeStyle = "rgba(255, 255, 255, 0.8)";
                 ctx.lineWidth = 8;
@@ -486,13 +493,38 @@
                     ctx.lineTo(blade[i].x, blade[i].y);
                 }
                 ctx.stroke();
-                
-                checkCollisions();
+            }
+        }
+
+        // --- MAIN LOOP ---
+
+        function animate(timestamp) {
+            if (!gameRunning) return;
+            
+            // 1. Spawner
+            if (timestamp - lastTime > 1000) { // Approx 1 second
+                const count = Math.floor(Math.random() * 2) + 1;
+                for(let i=0; i<count; i++) fruits.push(new Fruit());
+                lastTime = timestamp;
             }
 
-            // Decrease blade length over time if not moving? 
-            // Actually manual clear on mouseup handles most, 
-            // but we can trim the tail to make it look like a swoosh
+            // 2. Updates
+            for (let i = fruits.length - 1; i >= 0; i--) {
+                fruits[i].update();
+                if (!fruits[i].active) fruits.splice(i, 1);
+            }
+            for (let i = particles.length - 1; i >= 0; i--) {
+                particles[i].update();
+                if (particles[i].life <= 0) particles.splice(i, 1);
+            }
+            
+            // 3. Draw Everything
+            draw();
+
+            // 4. Collisions
+            if (blade.length > 1) checkCollisions();
+
+            // 5. Cleanup Blade
             if (blade.length > 0 && !isDown) {
                 blade.shift();
             }
@@ -503,13 +535,22 @@
         // --- INIT ---
         startBtn.addEventListener('click', () => {
             startScreen.classList.add('hidden');
+            startGame();
+        });
+
+        restartBtn.addEventListener('click', () => {
+            victoryScreen.classList.add('hidden');
+            startGame();
+        });
+
+        function startGame() {
             gameRunning = true;
             score = 0;
             scoreEl.innerText = score;
             fruits = [];
             particles = [];
             requestAnimationFrame(animate);
-        });
+        }
 
     </script>
 </body>
