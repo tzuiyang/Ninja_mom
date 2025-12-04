@@ -95,7 +95,7 @@
     <div id="start-screen">
         <h1 style="font-size: 40px;">Mom Ninja!</h1>
         <p style="color: #555;">
-            Slash the DEVIL (Me) 😈<br>
+            Slash the DEVILS (Me, Dad, Sis) 😈<br>
             Do NOT slash the ANGEL (Mom) 👼
         </p>
         <button id="startBtn">Start Game</button>
@@ -118,6 +118,12 @@
 
         const momImg = new Image();
         momImg.src = 'mom.jpg';
+
+        const dadImg = new Image();
+        dadImg.src = 'dad.jpg';
+
+        const sisImg = new Image();
+        sisImg.src = 'sis.jpg';
 
         // Game State
         let score = 0;
@@ -206,9 +212,24 @@
                 
                 this.active = true;
                 
-                // 80% Chance it's YOU (Target), 20% Chance it's MOM (Bomb)
-                this.isBomb = Math.random() > 0.8; 
-                this.emoji = this.isBomb ? "👼" : "😈"; 
+                // CHARACTER LOGIC
+                // 20% Chance it's Mom (BOMB)
+                // 80% Chance it's a Target (Me, Dad, or Sis)
+                if (Math.random() > 0.8) {
+                    this.type = 'mom';
+                    this.isBomb = true; 
+                } else {
+                    this.isBomb = false;
+                    // Randomly pick which family member to slash
+                    const r = Math.random();
+                    if (r < 0.33) {
+                        this.type = 'me';
+                    } else if (r < 0.66) {
+                        this.type = 'dad';
+                    } else {
+                        this.type = 'sis';
+                    }
+                }
             }
 
             update() {
@@ -229,14 +250,15 @@
                 ctx.translate(this.x, this.y);
                 ctx.rotate(this.rotation);
                 
-                // DRAW IMAGES INSTEAD OF EMOJIS
-                // The numbers (-40, -40, 80, 80) center the image and set size to 80x80px
-                if (this.isBomb) {
-                    // Draw Mom (Angel/Bomb)
+                // DRAW BASED ON TYPE
+                if (this.type === 'mom') {
                     ctx.drawImage(momImg, -40, -40, 80, 80);
-                } else {
-                    // Draw Me (Devil/Target)
+                } else if (this.type === 'me') {
                     ctx.drawImage(meImg, -40, -40, 80, 80);
+                } else if (this.type === 'dad') {
+                    ctx.drawImage(dadImg, -40, -40, 80, 80);
+                } else if (this.type === 'sis') {
+                    ctx.drawImage(sisImg, -40, -40, 80, 80);
                 }
 
                 ctx.restore();
@@ -298,7 +320,7 @@
                         body.classList.add("shake");
                         
                     } else {
-                        // Slashed Me (GOOD)
+                        // Slashed Me/Dad/Sis (GOOD)
                         score++;
                         scoreEl.innerText = score;
                         // Spawn Particles
